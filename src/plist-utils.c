@@ -49,3 +49,23 @@ int plist_node_get_item_count(plist_t node) {
 	return count;
 }
 
+int plist_item_index(plist_t node) {
+	plist_t parent;
+	plist_t child;
+	int count = 0;
+
+	parent = plist_get_parent(node);
+
+	if (parent == NULL || node == NULL) {
+		return -1;
+	}
+
+	child = plist_get_first_child(parent);
+	while (child && child != node) {
+		count ++;
+		child = plist_get_next_sibling(child);
+	}
+
+	return count;
+}
+

@@ -25,5 +25,6 @@
 #include <plist/plist.h>
 
 int plist_node_get_item_count(plist_t node);
+int plist_item_index(plist_t node);
 
 #endif

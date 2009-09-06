@@ -52,34 +52,24 @@ void update_document_tree_view(plist_t node, GtkTreeIter *parent) {
 	GtkTreeStore *store = app.document_tree_store;
 	GtkTreeIter iter;
 	plist_t subnode = NULL;
-	plist_t value_node = NULL;
 	plist_type type;
-	plist_type value_type;
 
 	gtk_tree_store_append(store, &iter, parent);
 	gtk_tree_store_set(store, &iter,
 		0, (gpointer)node,
 		-1);
 
-	/* check for root */
-	if (parent == NULL) {
-		value_node = node;
-	} else {
-		value_node = plist_get_next_sibling(node);
-	}
-	value_type = plist_get_node_type(value_node);
-
-	/* recurse through children */
-	for (
-		subnode = plist_get_first_child(value_node);
-		subnode != NULL;
-		subnode = plist_get_next_sibling(subnode)
-	) {
-		type = plist_get_node_type(subnode);
-		if (type == PLIST_KEY) {
-			update_document_tree_view(subnode, &iter);
-		}
-		if (value_type == PLIST_ARRAY && (type != PLIST_DICT && type != PLIST_ARRAY)) {
+	/* If structured node, recurse through childrens (skip keys in case of dicts) */
+	type = plist_get_node_type(node);
+	if ( type == PLIST_DICT || type == PLIST_ARRAY ) {
+		for (
+			subnode = plist_get_first_child(node);
+			subnode != NULL;
+			subnode = plist_get_next_sibling(subnode)
+		) {
+			if (type == PLIST_DICT) {
+				subnode = plist_get_next_sibling(subnode);
+			}
 			update_document_tree_view(subnode, &iter);
 		}
 	}
@@ -204,9 +194,10 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 {
 	col_type_t col_type;
 	plist_t node;
-	plist_t value_node;
+	plist_t key_node;
 	plist_t parent_node;
 	plist_type value_type;
+	plist_type parent_type;
 	char *text = NULL;
 
 	char *s = NULL;
@@ -219,44 +210,24 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 	gtk_tree_model_get(model, iter, 0, &node, -1);
 
 	parent_node = plist_get_parent(node);
-
-	if (parent_node == NULL) {
-		value_node = node;
-	}
-	else
-	{
-		value_node = plist_get_next_sibling(node);
+	parent_type = plist_get_node_type(parent_node);
+	if (parent_type == PLIST_DICT) {
+		key_node = plist_get_prev_sibling(node);
 	}
 
-	if (plist_get_node_type(parent_node) == PLIST_ARRAY) {
-		if ((value_type != PLIST_DICT) && (value_type != PLIST_ARRAY)) {
-			value_node = node;
-		}
-	}
-	value_type = plist_get_node_type(value_node);
+	value_type = plist_get_node_type(node);
 
 	switch(col_type) {
 	case COL_KEY:
-		if (plist_get_parent(node) == NULL) {
+		if (parent_node == NULL) {
 			text = "Root";
 		}
-		else
-		{
-			switch(plist_get_node_type(node)) {
-			case PLIST_KEY:
-				plist_get_key_val(node, &text);
-				break;
-			case PLIST_STRING:
-				plist_get_string_val(node, &text);
-				break;
-			case PLIST_UINT:
-				plist_get_uint_val(value_node, &u);
-				text = g_strdup_printf("%llu", (long long)u);
-				break;
-			default:
-				text = g_strdup_printf("Unhandled %d", plist_get_node_type(node));
-				break;
-			}
+		else if (parent_type == PLIST_DICT) {
+			plist_get_key_val(key_node, &text);
+		}
+		else if (parent_type == PLIST_ARRAY) {
+			int index = plist_item_index(node);
+			text = g_strdup_printf("Item %i", index);
 		}
 		break;
 	case COL_TYPE:
@@ -291,19 +262,19 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 		g_object_set(renderer, "sensitive", TRUE, NULL);
 		switch(value_type) {
 		case PLIST_BOOLEAN:
-			plist_get_bool_val(value_node, &b);
+			plist_get_bool_val(node, &b);
 			text = (b ? "true" : "false");
 			break;
 		case PLIST_UINT:
-			plist_get_uint_val(value_node, &u);
+			plist_get_uint_val(node, &u);
 			text = g_strdup_printf("%llu", (long long)u);
 			break;
 		case PLIST_REAL:
-			plist_get_real_val(value_node, &d);
+			plist_get_real_val(node, &d);
 			text = g_strdup_printf("%f", d);
 			break;
 		case PLIST_STRING:
-			plist_get_string_val(value_node, &text);
+			plist_get_string_val(node, &text);
 			break;
 		case PLIST_DATA:
 			text = "FIXME: Parse Data";
@@ -313,7 +284,7 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 			break;
 		case PLIST_ARRAY:
 		case PLIST_DICT:
-			text = g_strdup_printf("(%d items)", plist_node_get_item_count(value_node));
+			text = g_strdup_printf("(%d items)", plist_node_get_item_count(node));
 			g_object_set(renderer, "sensitive", FALSE, NULL);
 			break;
 		default:
