@@ -63,12 +63,12 @@
                   <object class="GtkMenu" id="menu1">
                     <property name="visible">True</property>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem1">
+                      <object class="GtkImageMenuItem" id="new_plist_menu_item">
                         <property name="label">gtk-new</property>
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <signal name="activate" handler="new_plist_cb"/>
                       </object>
                     </child>
                     <child>
@@ -203,10 +203,10 @@
             <child>
               <object class="GtkToolButton" id="new_plist_button">
                 <property name="visible">True</property>
-                <property name="sensitive">False</property>
                 <property name="label" translatable="yes">New</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-new</property>
+                <signal name="clicked" handler="new_plist_cb"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -317,10 +317,8 @@
                         <property name="editable">True</property>
                         <property name="model">plist_type_list_store</property>
                         <property name="text_column">0</property>
+                        <signal name="edited" handler="type_edited_cb"/>
                       </object>
-                      <attributes>
-                        <attribute name="has-entry">0</attribute>
-                      </attributes>
                     </child>
                   </object>
                 </child>

@@ -38,6 +38,13 @@ static struct AppState {
 	gboolean is_binary;
 } app;
 
+typedef enum {
+	COL_KEY,
+	COL_TYPE,
+	COL_VALUE,
+	N_COLUMNS
+} col_type_t;
+
 void main_window_destroy_cb(GtkWidget* widget, gpointer user_data) {
 	if (app.document_tree_store)
 		gtk_tree_store_clear(app.document_tree_store);
@@ -177,6 +184,56 @@ void open_plist_cb(GtkWidget* item, gpointer user_data) {
 	gtk_widget_destroy (dialog);
 }
 
+void new_plist_cb(GtkWidget* item, gpointer user_data) {
+
+	gtk_tree_store_clear(app.document_tree_store);
+
+	plist_free(app.root_node);
+	app.root_node = plist_new_dict();
+	update_document_tree_view(app.root_node, NULL);
+	gtk_tree_view_expand_all(app.document_tree_view);
+}
+
+void type_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_text, gpointer user_data)
+{
+	plist_t node;
+	GtkTreeIter iter;
+	GtkTreePath *path = NULL;
+	plist_type type = PLIST_NONE;
+	GtkTreeModel *model = GTK_TREE_MODEL(app.document_tree_store);
+
+	gtk_tree_model_get_iter_from_string(model, &iter, path_string);
+	path = gtk_tree_path_new_from_string(path_string);
+	gtk_tree_model_get(model, &iter, 0, &node, -1);
+
+	if (!strcmp(new_text,"Boolean")){
+		type = PLIST_BOOLEAN;
+	}
+	else if (!strcmp(new_text,"Number")){
+		type = PLIST_UINT;
+	}
+	else if (!strcmp(new_text,"Float")){
+		type = PLIST_REAL;
+	}
+	else if (!strcmp(new_text,"String")){
+		type = PLIST_STRING;
+	}
+	else if (!strcmp(new_text,"Data")){
+		type = PLIST_DATA;
+	}
+	else if (!strcmp(new_text,"Date")){
+		type = PLIST_DATE;
+	}
+	else if (!strcmp(new_text,"Array")){
+		type = PLIST_ARRAY;
+	}
+	else if (!strcmp(new_text,"Dictionary")){
+		type = PLIST_DICT;
+	}
+	plist_set_type(node, type);
+	gtk_tree_model_row_changed(model, path, &iter);
+}
+
 void about_menu_item_activate_cb(GtkMenuItem* item, gpointer user_data) {
 	gtk_show_about_dialog(app.main_window,
 		"program-name", "GNOME Property List Editor",
@@ -186,13 +243,6 @@ void about_menu_item_activate_cb(GtkMenuItem* item, gpointer user_data) {
 		"version", PACKAGE_VERSION,
 		NULL);
 }
-
-typedef enum {
-	COL_KEY,
-	COL_TYPE,
-	COL_VALUE,
-	N_COLUMNS
-} col_type_t;
 
 void plist_cell_data_function (GtkTreeViewColumn *col,
 	GtkCellRenderer *renderer,
