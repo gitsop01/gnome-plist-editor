@@ -124,6 +124,9 @@ static void open_plist_file(const char *filename) {
 		NULL,
 		&err);
 
+	plist_free(app.root_node);
+	app.root_node = NULL;
+
 	if (memcmp(buffer, "bplist00", 8) == 0) {
 		plist_from_bin(buffer, size, &app.root_node);
 		app.is_binary = TRUE;
@@ -201,28 +204,42 @@ void add_child_cb(GtkWidget* item, gpointer user_data) {
 	GtkTreeView      *view = GTK_TREE_VIEW(app.document_tree_view);
 	GtkTreeIter       iter;
 	GtkTreePath      *path = NULL;
+	plist_t child = NULL;
 
 	selection = gtk_tree_view_get_selection(view);
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		plist_t node = NULL;
 		gtk_tree_model_get (model, &iter, 0, &node, -1);
-		path = gtk_tree_model_get_path(model, &iter);
 
 		//check that node is a structured node
 		plist_type type = plist_get_node_type(node);
 
-		if (type == PLIST_ARRAY) {
-			plist_array_append_item(node, plist_new_bool(0));
+		if ( type == PLIST_ARRAY || type == PLIST_DICT ) {
+			path = gtk_tree_model_get_path(model, &iter);
+
+			//default child is of type bool
+			child = plist_new_bool(0);
+
+			if (type == PLIST_ARRAY) {
+				plist_array_append_item(node, child);
+			}
+			else if (type == PLIST_DICT) {
+				uint32_t n = plist_dict_get_size(node);
+				gchar* key = g_strdup_printf("Item %i", n);
+				plist_dict_insert_item(node, key, child);
+				g_free(key);
+			}
+
+			//update tree model
+			GtkTreeIter iter_child;
+
+			gtk_tree_store_append(app.document_tree_store, &iter_child, &iter);
+			gtk_tree_store_set(app.document_tree_store, &iter_child,
+				0, (gpointer)child,
+				-1);
 			gtk_tree_view_expand_row(view, path, FALSE);
+			gtk_tree_path_free(path);
 		}
-		else if (type == PLIST_DICT) {
-			uint32_t n = plist_dict_get_size(node);
-			gchar* key = g_strdup_printf("Item %i", n);
-			plist_dict_insert_item(node, key, plist_new_bool(0));
-			g_free(key);
-			gtk_tree_view_expand_row(view, path, FALSE);
-		}
-		gtk_tree_path_free(path);
 	}
 }
 
@@ -467,6 +484,7 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 void setup_tree_view(GtkBuilder *gtk_builder) {
 	GtkTreeViewColumn *column;
 	GtkCellRenderer *cell;
+	GtkTreeSelection *selection;
 
 	app.document_tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gtk_builder, "document_tree_view"));
 	app.document_tree_store = GTK_TREE_STORE(gtk_builder_get_object(gtk_builder, "document_tree_store"));
@@ -485,6 +503,10 @@ void setup_tree_view(GtkBuilder *gtk_builder) {
 	column = GTK_TREE_VIEW_COLUMN(gtk_builder_get_object(gtk_builder, "treeviewcolumn3"));
 	cell = GTK_CELL_RENDERER(gtk_builder_get_object(gtk_builder, "cellrenderertext2"));
 	gtk_tree_view_column_set_cell_data_func(column, cell, plist_cell_data_function, GINT_TO_POINTER(COL_VALUE), NULL);
+
+	/* selection mode */
+	selection = gtk_tree_view_get_selection(app.document_tree_view);
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
 }
 
 int main(int argc, char **argv) {
