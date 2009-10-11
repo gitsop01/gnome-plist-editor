@@ -43,8 +43,8 @@
   <object class="GtkWindow" id="main_window">
     <property name="title" translatable="yes">Property List Editor</property>
     <property name="window_position">center</property>
-    <property name="default_width">450</property>
-    <property name="default_height">350</property>
+    <property name="default_width">600</property>
+    <property name="default_height">600</property>
     <property name="icon_name">text-editor</property>
     <signal name="destroy" handler="main_window_destroy_cb"/>
     <child>
@@ -264,10 +264,10 @@
             <child>
               <object class="GtkToolButton" id="delete_item_button">
                 <property name="visible">True</property>
-                <property name="sensitive">False</property>
                 <property name="label" translatable="yes">Delete Item</property>
                 <property name="use_underline">True</property>
                 <property name="icon_name">list-remove</property>
+                <signal name="clicked" handler="remove_child_cb"/>
               </object>
               <packing>
                 <property name="expand">False</property>

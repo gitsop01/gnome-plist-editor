@@ -243,6 +243,40 @@ void add_child_cb(GtkWidget* item, gpointer user_data) {
 	}
 }
 
+void remove_child_cb(GtkWidget* item, gpointer user_data) {
+
+	GtkTreeSelection *selection;
+	GtkTreeModel     *model;
+	GtkTreeView      *view = GTK_TREE_VIEW(app.document_tree_view);
+	GtkTreeIter       iter;
+	plist_t parent = NULL;
+
+	selection = gtk_tree_view_get_selection(view);
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		plist_t node = NULL;
+		gtk_tree_model_get (model, &iter, 0, &node, -1);
+		parent = plist_get_parent(node);
+
+		if (parent) {
+			plist_type type = plist_get_node_type(parent);
+
+			if (type == PLIST_ARRAY) {
+				plist_array_remove_item(parent, plist_array_get_item_index(node));
+			}
+			else if (type == PLIST_DICT) {
+				char* key = NULL;
+				plist_dict_get_item_key(node, &key);
+				plist_dict_remove_item(parent, key);
+				free(key);
+			}
+
+			//update tree model
+			gtk_tree_store_remove(app.document_tree_store, &iter);
+		}
+	}
+}
+
+
 void type_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_text, gpointer user_data)
 {
 	plist_t node;
