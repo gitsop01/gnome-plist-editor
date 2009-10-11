@@ -61,17 +61,25 @@ void update_document_tree_view(plist_t node, GtkTreeIter *parent) {
 
 	/* If structured node, recurse through childrens (skip keys in case of dicts) */
 	type = plist_get_node_type(node);
-	if ( type == PLIST_DICT || type == PLIST_ARRAY ) {
-		for (
-			subnode = plist_get_first_child(node);
-			subnode != NULL;
-			subnode = plist_get_next_sibling(subnode)
-		) {
-			if (type == PLIST_DICT) {
-				subnode = plist_get_next_sibling(subnode);
-			}
+	if ( type == PLIST_ARRAY ) {
+		uint32_t i = 0;
+		uint32_t size = plist_array_get_size(node);
+		for (i = 0; i < size; i++) {
+			subnode = plist_array_get_item(node, i);
 			update_document_tree_view(subnode, &iter);
 		}
+	}
+	else if ( type == PLIST_DICT ) {
+		plist_dict_iter dict_iter = NULL;
+		plist_dict_new_iter(node, &dict_iter);
+
+		plist_dict_next_item(node, dict_iter, NULL, &subnode);
+		while (subnode) {
+			update_document_tree_view(subnode, &iter);
+			plist_dict_next_item(node, dict_iter, NULL, &subnode);
+		};
+
+		free(dict_iter);
 	}
 }
 
@@ -194,7 +202,6 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 {
 	col_type_t col_type;
 	plist_t node;
-	plist_t key_node;
 	plist_t parent_node;
 	plist_type value_type;
 	plist_type parent_type;
@@ -211,9 +218,6 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 
 	parent_node = plist_get_parent(node);
 	parent_type = plist_get_node_type(parent_node);
-	if (parent_type == PLIST_DICT) {
-		key_node = plist_get_prev_sibling(node);
-	}
 
 	value_type = plist_get_node_type(node);
 
@@ -223,10 +227,10 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 			text = "Root";
 		}
 		else if (parent_type == PLIST_DICT) {
-			plist_get_key_val(key_node, &text);
+			plist_dict_get_item_key(node, &text);
 		}
 		else if (parent_type == PLIST_ARRAY) {
-			int index = plist_item_index(node);
+			int index = plist_array_get_item_index(node);
 			text = g_strdup_printf("Item %i", index);
 		}
 		break;
