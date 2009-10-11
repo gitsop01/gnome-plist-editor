@@ -249,12 +249,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkToolButton" id="add_sibling_button">
+              <object class="GtkToolButton" id="add_child_button">
                 <property name="visible">True</property>
-                <property name="sensitive">False</property>
                 <property name="label" translatable="yes">Add Item</property>
                 <property name="use_underline">True</property>
                 <property name="icon_name">list-add</property>
+                <signal name="clicked" handler="add_child_cb"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -304,7 +304,10 @@
                     <property name="min_width">150</property>
                     <property name="title">Key</property>
                     <child>
-                      <object class="GtkCellRendererText" id="cellrenderertext1"/>
+                      <object class="GtkCellRendererText" id="cellrenderertext1">
+                        <property name="editable">True</property>
+                        <signal name="edited" handler="key_edited_cb"/>
+                      </object>
                     </child>
                   </object>
                 </child>
@@ -328,7 +331,10 @@
                     <property name="title">Value</property>
                     <property name="expand">True</property>
                     <child>
-                      <object class="GtkCellRendererText" id="cellrenderertext2"/>
+                      <object class="GtkCellRendererText" id="cellrenderertext2">
+                        <property name="editable">True</property>
+                        <signal name="edited" handler="value_edited_cb"/>
+                      </object>
                     </child>
                   </object>
                 </child>

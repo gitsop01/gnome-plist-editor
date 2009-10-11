@@ -194,6 +194,38 @@ void new_plist_cb(GtkWidget* item, gpointer user_data) {
 	gtk_tree_view_expand_all(app.document_tree_view);
 }
 
+void add_child_cb(GtkWidget* item, gpointer user_data) {
+
+	GtkTreeSelection *selection;
+	GtkTreeModel     *model;
+	GtkTreeView      *view = GTK_TREE_VIEW(app.document_tree_view);
+	GtkTreeIter       iter;
+	GtkTreePath      *path = NULL;
+
+	selection = gtk_tree_view_get_selection(view);
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		plist_t node = NULL;
+		gtk_tree_model_get (model, &iter, 0, &node, -1);
+		path = gtk_tree_model_get_path(model, &iter);
+
+		//check that node is a structured node
+		plist_type type = plist_get_node_type(node);
+
+		if (type == PLIST_ARRAY) {
+			plist_array_append_item(node, plist_new_bool(0));
+			gtk_tree_view_expand_row(view, path, FALSE);
+		}
+		else if (type == PLIST_DICT) {
+			uint32_t n = plist_dict_get_size(node);
+			gchar* key = g_strdup_printf("Item %i", n);
+			plist_dict_insert_item(node, key, plist_new_bool(0));
+			g_free(key);
+			gtk_tree_view_expand_row(view, path, FALSE);
+		}
+		gtk_tree_path_free(path);
+	}
+}
+
 void type_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_text, gpointer user_data)
 {
 	plist_t node;
@@ -233,6 +265,88 @@ void type_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_te
 	plist_set_type(node, type);
 	gtk_tree_model_row_changed(model, path, &iter);
 }
+
+void key_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_text, gpointer user_data)
+{
+	plist_t node;
+	plist_t father;
+	GtkTreeIter iter;
+	GtkTreePath *path = NULL;
+	plist_type type = PLIST_NONE;
+	GtkTreeModel *model = GTK_TREE_MODEL(app.document_tree_store);
+
+	gtk_tree_model_get_iter_from_string(model, &iter, path_string);
+	path = gtk_tree_path_new_from_string(path_string);
+	gtk_tree_model_get(model, &iter, 0, &node, -1);
+
+	father = plist_get_parent(node);
+	if (father){
+		type = plist_get_node_type(father);
+		if (PLIST_DICT == type){
+			char* old_key = NULL;
+			plist_t backup = plist_copy(node);
+			plist_dict_get_item_key(node, &old_key);
+			plist_dict_remove_item(father, old_key);
+			free(old_key);
+			plist_dict_insert_item(father, new_text, backup);
+			gtk_tree_store_set(app.document_tree_store,
+					   &iter,
+					   0,
+					   (gpointer)backup,
+					   -1);
+		}
+	}
+	gtk_tree_model_row_changed(model, path, &iter);
+}
+
+void value_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_text, gpointer user_data)
+{
+	plist_t node;
+	GtkTreeIter iter;
+	GtkTreePath *path = NULL;
+	plist_type type = PLIST_NONE;
+	GtkTreeModel *model = GTK_TREE_MODEL(app.document_tree_store);
+
+	double d;
+	uint8_t b;
+	uint64_t u;
+
+	gtk_tree_model_get_iter_from_string(model, &iter, path_string);
+	path = gtk_tree_path_new_from_string(path_string);
+	gtk_tree_model_get(model, &iter, 0, &node, -1);
+
+	type = plist_get_node_type(node);
+	switch (type){
+	case PLIST_BOOLEAN:
+		b = !strcmp(new_text, "true") ? 1 : 0;
+		plist_set_bool_val(node, b);
+		break;
+	case PLIST_UINT:
+		u = g_ascii_strtoull(new_text, NULL, 0);
+		plist_set_uint_val(node, u);
+		break;
+	case PLIST_REAL:
+		d = g_ascii_strtod(new_text, NULL);
+		plist_set_real_val(node, d);
+		break;
+	case PLIST_STRING:
+		plist_set_string_val(node, new_text);
+		break;
+	case PLIST_DATA:
+		//TODO
+		break;
+	case PLIST_DATE:
+		//TODO
+		break;
+	case PLIST_ARRAY:
+	case PLIST_DICT:
+		break;
+	default:
+		break;
+	}
+	gtk_tree_model_row_changed(model, path, &iter);
+}
+
 
 void about_menu_item_activate_cb(GtkMenuItem* item, gpointer user_data) {
 	gtk_show_about_dialog(app.main_window,
