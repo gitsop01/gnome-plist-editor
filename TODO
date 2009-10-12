@@ -1,0 +1,38 @@
+0.1.0:
+OK - open plist file
+
+0.2.0:
+- save plist file
+
+0.3.0:
+- show correct cell renderer for a type in value column
+
+0.4.0:
+- create new plist files
+- open plist file supplied as command line argument
+
+0.5.0:
+- use recent file feature
+
+0.6.0:
+- indicate binary/xml save mode in UI
+
+0.7.0:
+- modify node type
+
+0.8.0:
+- modify node value
+
+0.9.0:
+- add new siblings
+- remove siblings
+
+1.0.0:
+- refactor code
+
+1.1.0:
+- remember last filechooser filter choice
+- remember last window position/state
+
+1.2.0:
+- print plist
