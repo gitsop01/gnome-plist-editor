@@ -1,8 +1,7 @@
 bin_PROGRAMS = gnome-plist-editor
 
 gnome_plist_editor_SOURCES = \
-	gnome-plist-editor.c \
-	plist-utils.c
+	gnome-plist-editor.c
 
 gnome_plist_editor_CFLAGS = \
 	-Wl,--export-dynamic \

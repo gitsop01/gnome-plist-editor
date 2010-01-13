@@ -27,7 +27,6 @@
 #include <gio/gio.h>
 
 #include <plist/plist.h>
-#include "plist-utils.h"
 
 static struct AppState {
 	GtkWindow *main_window;
@@ -502,8 +501,11 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 			text = "FIXME: Parse Dates";
 			break;
 		case PLIST_ARRAY:
+			text = g_strdup_printf("(%d items)", plist_array_get_size(node));
+			g_object_set(renderer, "sensitive", FALSE, NULL);
+			break;
 		case PLIST_DICT:
-			text = g_strdup_printf("(%d items)", plist_node_get_item_count(node));
+			text = g_strdup_printf("(%d items)", plist_dict_get_size(node));
 			g_object_set(renderer, "sensitive", FALSE, NULL);
 			break;
 		default:
