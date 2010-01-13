@@ -425,6 +425,7 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 	double d;
 	uint8_t b;
 	uint64_t u = 0;
+	GTimeVal val = { 0, 0 };
 
 	col_type = (col_type_t)GPOINTER_TO_INT(user_data);
 
@@ -498,7 +499,8 @@ void plist_cell_data_function (GtkTreeViewColumn *col,
 			text = "FIXME: Parse Data";
 			break;
 		case PLIST_DATE:
-			text = "FIXME: Parse Dates";
+			plist_get_date_val(node, (int32_t*)&val.tv_sec, (int32_t*)&val.tv_usec);
+			text = g_time_val_to_iso8601(&val);
 			break;
 		case PLIST_ARRAY:
 			text = g_strdup_printf("(%d items)", plist_array_get_size(node));
