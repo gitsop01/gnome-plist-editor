@@ -22,6 +22,8 @@
 #include <config.h>
 
 #include <stdlib.h>
+#include <strings.h>
+#include <stdio.h>
 
 #include <gtk/gtk.h>
 #include <gio/gio.h>
@@ -225,7 +227,7 @@ void add_child_cb(GtkWidget* item, gpointer user_data) {
 			else if (type == PLIST_DICT) {
 				uint32_t n = plist_dict_get_size(node);
 				gchar* key = g_strdup_printf("Item %i", n);
-				plist_dict_insert_item(node, key, child);
+				plist_dict_set_item(node, key, child);
 				g_free(key);
 			}
 
@@ -312,7 +314,7 @@ void type_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_te
 	else if (!strcmp(new_text,"Dictionary")){
 		type = PLIST_DICT;
 	}
-	plist_set_type(node, type);
+	/* plist_set_type(node, type); Removed from libplist on 20/05/14 with Removed plist_set_type() as it should not be used.*/ 
 	gtk_tree_model_row_changed(model, path, &iter);
 }
 
@@ -338,7 +340,7 @@ void key_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_tex
 			plist_dict_get_item_key(node, &old_key);
 			plist_dict_remove_item(father, old_key);
 			free(old_key);
-			plist_dict_insert_item(father, new_text, backup);
+			plist_dict_set_item(father, new_text, backup);
 			gtk_tree_store_set(app.document_tree_store,
 					   &iter,
 					   0,
@@ -398,13 +400,24 @@ void value_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_t
 }
 
 
-void about_menu_item_activate_cb(GtkMenuItem* item, gpointer user_data) {
-	gtk_show_about_dialog(app.main_window,
-		"program-name", "GNOME Property List Editor",
+void about_menu_item_activate_cb(GtkMenuItem *item, gpointer user_data) {
+	
+        const gchar *authors[] = {
+            "Martin Szulecki <opensuse@sukimashita.com>",
+            "Jonathan Beck <jonabeck@gmail.com>",
+            NULL
+        };
+        
+        gtk_show_about_dialog(app.main_window,
+		"name", "Gnome Property List Editor",
+        "version", PACKAGE_VERSION, 
+        "comments", "A developer's Property List Editor",
+        "authors", authors,
 		"logo-icon-name", "text-editor",
 		"website", "http://cgit.sukimashita.com/gnome-plist-editor.git/",
 		"website-label", "GIT Source Code Repository",
-		"version", PACKAGE_VERSION,
+		"license-type", GTK_LICENSE_LGPL_2_1,
+        "wrap-license", "TRUE",
 		NULL);
 }
 
@@ -550,7 +563,8 @@ void setup_tree_view(GtkBuilder *gtk_builder) {
 int main(int argc, char **argv) {
 	GtkBuilder *gtk_builder;
 
-	gtk_set_locale();
+	/* gtk_set_locale(); This has been deprecated in gtk3 use setlocale() */
+    setlocale();
 
 	/* Initialize the widget set */
 	gtk_init (&argc, &argv);
