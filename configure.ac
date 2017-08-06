@@ -1,6 +1,6 @@
 AC_PREREQ(2.61)
 
-AC_INIT([gnome-plist-editor], [0.1.0], [opensuse@sukimashita.com])
+AC_INIT([gnome-plist-editor], [0.1.5], [opensuse@sukimashita.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-bzip2])
 
 AC_CONFIG_HEADERS([config.h])

@@ -2,25 +2,25 @@
  * gnome-plist-editor.c
  *
  * Copyright (C) 2009 Martin Szulecki <opensuse@sukimashita.com>
- * 
+ * Copyright (C) 2016-2017 Timothy Ward <gtwa001@gmail.com>
+ *
  * The code contained in this file is free software; you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either version
  * 2.1 of the License, or (at your option) any later version.
- *  
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this code; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335
+ * USA
  */
 
-#include <config.h>
-
+#include "config.h"
 #include <stdlib.h>
 #include <strings.h>
 #include <stdio.h>
@@ -45,6 +45,10 @@ typedef enum {
 	COL_VALUE,
 	N_COLUMNS
 } col_type_t;
+
+char *buffer = NULL;
+gsize size = 0;
+gsize bytes_read = 0;
 
 void main_window_destroy_cb(GtkWidget* widget, gpointer user_data) {
 	if (app.document_tree_store)
@@ -92,9 +96,8 @@ void update_document_tree_view(plist_t node, GtkTreeIter *parent) {
 }
 
 static void open_plist_file(const char *filename) {
-	char *buffer = NULL;
-	gsize size = 0;
-	gsize bytes_read = 0;
+/*	char *buffer = NULL; */
+
 	GFile *file = NULL;
 	GFileInfo *fileinfo = NULL;
 	GFileInputStream *filestream = NULL;
@@ -140,7 +143,7 @@ static void open_plist_file(const char *filename) {
 	update_document_tree_view(app.root_node, NULL);
 	gtk_tree_view_expand_all(app.document_tree_view);
 
-	g_free(buffer);
+/*	g_free(buffer); */
 
 leave:
 	if (fileinfo)
@@ -187,6 +190,109 @@ void open_plist_cb(GtkWidget* item, gpointer user_data) {
 
 	gtk_widget_destroy (dialog);
 }
+
+static void close_plist_file(const char *filename) {
+/*	char *buffer = NULL; */
+/*	gsize size = 0; */
+/*	gsize bytes_read = 0; */
+	GFile *file = NULL;
+	GFileInfo *fileinfo = NULL;
+	GFileOutputStream *filestream = NULL;
+	GError *err = NULL;
+
+	file = g_file_new_for_path(filename);
+	filestream = g_file_create(file,G_FILE_CREATE_NONE, NULL, &err);
+	if (!filestream) {
+		fprintf(stderr, "ERROR: create %s: %s\n", file, err->message);
+		g_object_unref(file);
+		goto leave;
+	}
+
+	fileinfo = g_file_query_info(file,
+		G_FILE_ATTRIBUTE_STANDARD_SIZE,
+		G_FILE_QUERY_INFO_NONE,
+		NULL,
+		&err);
+
+	size = g_file_info_get_size(fileinfo);
+
+	/* write the plist to file*/
+/*	buffer = (char *)g_malloc(sizeof(char) * (size + 1)); */
+	gboolean  test = g_output_stream_write_all(G_OUTPUT_STREAM(filestream),
+		buffer,
+		size,
+		&bytes_read,
+		NULL,
+		&err);
+        if (err != NULL){
+          fprintf(stderr," output stream error %c", err);
+        }
+        if ( test == FALSE){
+          fprintf(stderr," output steam failure %c", err);
+        }
+	plist_free(app.root_node);
+	app.root_node = NULL;
+
+	if (memcmp(buffer, "bplist00", 8) == 0) {
+		plist_from_bin(buffer, size, &app.root_node);
+		app.is_binary = TRUE;
+	} else {
+		plist_from_xml(buffer, size, &app.root_node);
+		app.is_binary = FALSE;
+	}
+
+	gtk_tree_store_clear(app.document_tree_store);
+	update_document_tree_view(app.root_node, NULL);
+	gtk_tree_view_expand_all(app.document_tree_view);
+
+	g_free(buffer);
+
+leave:
+	if (fileinfo)
+		g_object_unref(fileinfo);
+	if (filestream)
+		g_object_unref(filestream);
+	if (file)
+		g_object_unref(file);
+}
+
+void close_plist_cb(GtkWidget* item, gpointer user_data) {
+	GtkWidget *dialog;
+	GtkFileFilter *filter;
+
+	char *filename = NULL;
+
+	dialog = gtk_file_chooser_dialog_new ("Close Property List File",
+		app.main_window,
+		GTK_FILE_CHOOSER_ACTION_SAVE,
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+		GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+		NULL);
+
+	/* add default filter */
+	filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "All Files");
+	gtk_file_filter_add_pattern(filter, "*");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+	/* add plist filter */
+	filter = gtk_file_filter_new();
+	gtk_file_filter_add_pattern(filter, "*.plist");
+	gtk_file_filter_set_name(filter, "Property List Files");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+	if (gtk_dialog_run(GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT) {
+		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		close_plist_file(filename);
+	}
+
+	if (filename)
+		g_free (filename);
+
+	gtk_widget_destroy (dialog);
+}
+
 
 void new_plist_cb(GtkWidget* item, gpointer user_data) {
 
@@ -314,7 +420,7 @@ void type_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_te
 	else if (!strcmp(new_text,"Dictionary")){
 		type = PLIST_DICT;
 	}
-	/* plist_set_type(node, type); Removed from libplist on 20/05/14 with Removed plist_set_type() as it should not be used.*/ 
+	/* plist_set_type(node, type); Removed from libplist on 20/05/14 with Removed plist_set_type() as it should not be used.*/
 	gtk_tree_model_row_changed(model, path, &iter);
 }
 
@@ -401,17 +507,17 @@ void value_edited_cb(GtkCellRendererText *cell, gchar *path_string, gchar *new_t
 
 
 void about_menu_item_activate_cb(GtkMenuItem *item, gpointer user_data) {
-	
+
         const gchar *authors[] = {
             "Martin Szulecki <opensuse@sukimashita.com>",
             "Jonathan Beck <jonabeck@gmail.com>",
-            NULL
+	    "Timothy Ward <gtwa001@gmail.com>",NULL
         };
-        
+
         gtk_show_about_dialog(app.main_window,
 		"name", "Gnome Property List Editor",
-        "version", PACKAGE_VERSION, 
-        "comments", "A developer's Property List Editor",
+        "version", PACKAGE_VERSION,
+        "comments", "A Developer's Property List Editor",
         "authors", authors,
 		"logo-icon-name", "text-editor",
 		"website", "http://cgit.sukimashita.com/gnome-plist-editor.git/",

@@ -85,9 +85,10 @@
                       <object class="GtkImageMenuItem" id="imagemenuitem3">
                         <property name="label">gtk-save</property>
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
+                        <property name="sensitive">True</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <signal name="activate" handler="close_plist_cb"/>
                       </object>
                     </child>
                     <child>
@@ -229,10 +230,11 @@
             <child>
               <object class="GtkToolButton" id="save_plist_button">
                 <property name="visible">True</property>
-                <property name="sensitive">False</property>
+                <property name="sensitive">True</property>
                 <property name="label" translatable="yes">Save</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-save</property>
+              <!--  <signal name="activate" handler="close_plist_cb"/> -->
               </object>
               <packing>
                 <property name="expand">False</property>
