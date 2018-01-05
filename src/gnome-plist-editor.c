@@ -22,10 +22,10 @@
 
 #include "config.h"
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <stdio.h>
 
-#include <gtk/gtk.h>
+#include <gtk-3.0/gtk/gtk.h>
 #include <gio/gio.h>
 
 #include <plist/plist.h>
@@ -515,16 +515,17 @@ void about_menu_item_activate_cb(GtkMenuItem *item, gpointer user_data) {
         };
 
         gtk_show_about_dialog(app.main_window,
-		"name", "Gnome Property List Editor",
+
+        "name", "Gnome Property List Editor",
         "version", PACKAGE_VERSION,
-        "comments", "A Developer's Property List Editor",
+        "comments", "A developer's Property List Editor",
         "authors", authors,
-		"logo-icon-name", "text-editor",
-		"website", "http://cgit.sukimashita.com/gnome-plist-editor.git/",
-		"website-label", "GIT Source Code Repository",
-		"license-type", GTK_LICENSE_LGPL_2_1,
+        "logo-icon-name", "text-editor",
+        "website", "http://cgit.sukimashita.com/gnome-plist-editor.git/",
+        "website-label", "GIT Source Code Repository",
+        "license-type", GTK_LICENSE_LGPL_2_1,
         "wrap-license", "TRUE",
-		NULL);
+        NULL);
 }
 
 void plist_cell_data_function (GtkTreeViewColumn *col,
