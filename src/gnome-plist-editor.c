@@ -2,7 +2,7 @@
  * gnome-plist-editor.c
  *
  * Copyright (C) 2009 Martin Szulecki <opensuse@sukimashita.com>
- * Copyright (C) 2016-2017 Timothy Ward <gtwa001@gmail.com>
+ * Copyright (C) 2016-2020 Timothy Ward <gtwa001@gmail.com>
  *
  * The code contained in this file is free software; you can redistribute
  * it and/or modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 #include <gtk-3.0/gtk/gtk.h>
-#include <gio/gio.h>
+#include <glib-2.0/gio/gio.h>
 
 #include <plist/plist.h>
 
@@ -521,7 +521,7 @@ void about_menu_item_activate_cb(GtkMenuItem *item, gpointer user_data) {
         "comments", "A developer's Property List Editor",
         "authors", authors,
         "logo-icon-name", "text-editor",
-        "website", "http://cgit.sukimashita.com/gnome-plist-editor.git/",
+        "website", "https://www.github.com/gitsop01/gnome-plist-editor/",
         "website-label", "GIT Source Code Repository",
         "license-type", GTK_LICENSE_LGPL_2_1,
         "wrap-license", "TRUE",
